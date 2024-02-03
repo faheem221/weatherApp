@@ -1,6 +1,8 @@
+ 
+ 
+
 .loader{
     animation: loading .4s ease-out infinite;
-    
 }
 
 @keyframes loading {

@@ -1,301 +1,455 @@
-'use client'
-import React, {useCallback, useEffect, useState} from 'react'
-import axios from 'axios';
-import cloud from 'remixicon-react/CloudLineIcon' 
-import ArrowDown from 'remixicon-react/ArrowDownLineIcon'
-
-import ArrowUp from 'remixicon-react/ArrowUpLineIcon'
- 
-
+import React, { useCallback, useEffect, useState } from "react";
+import ForecastDayCard from "./components/ForecastDayCard";
+import CurrentWeatherInfo from "./components/CurrentWeatherInfo";
+import Loader from "./components/loader";
+import axios from "axios";
+import "./App.css";
+import moment from "moment";
+import { FiCloudRain } from "react-icons/fi";
 const App = () => {
-  const [getCurrentLattitude, setGetCurrentLattitude] = useState(0)
-  const [getCurrentLongitude, setGetCurrentLongitude] = useState(0)
-  const currentWeatherApiKey = '38b1749b721f46da8a772913230210'
-  const [city, setCity] = useState('New Delhi')
-  const [currentweatherdata, setCurrentweatherdata] = useState({})
-  const [forecastweatherextras, setForecastweatherextras] = useState([])
-  const [chanceofRain, setChanceofRain] = useState('2')
-  const [sunset, setSunset] = useState('06:00 pm')
-  const [sunrise, setSunrise] = useState('05:00 am')
-  const[countryCodes, setCountryCodes] = useState('In')
-  const [feelslikeCondition, setFeelslikeCondition] = useState('Normal')
-  const [allcountrycode, setAllCountrycode] = useState([])
+  const [searchPlace, setSearchPlace] = useState("");
+  const [searchres, setSearchRes] = useState([]);
 
-  const currentweatherapicall = async () =>{
+  useEffect(() => {
     try {
-      await axios.get(`http://api.weatherapi.com/v1/forecast.json?key=${currentWeatherApiKey}&q=${city}`)
-    .then((res)=>{
-      const currentWeather = {
-        city:`${res.data.location.name}`,
-        currentTemp:`${res.data.current.temp_c}`,
-        windSpeed:`${res.data.current.wind_kph}`,
-        windDirection:`${res.data.current.wind_dir}`,
-        humidity:`${res.data.current.humidity}`,
-        visibility:`${res.data.current.vis_km}`,
-        feelsLike:`${res.data.current.feelslike_c}`,
-        condition:`${res.data.current.condition.text}`,
-        country:`${res.data.location.country}`
+      const searchApi = `https://geocoding-api.open-meteo.com/v1/search?name=${searchPlace}&count=5&language=en&format=json`;
+      if (searchPlace.length > 0) {
+        axios.get(searchApi).then((res) => setSearchRes(res.data));
+      } else if (searchPlace === "") {
+        setSearchRes([]);
       }
-
-      const tempForecast = res.data.forecast.forecastday
- 
-      setForecastweatherextras(tempForecast)
-
-
-
-      setCurrentweatherdata(currentWeather)
-      
-    }
-    )
     } catch (error) {
-      
-    }
-  
-  }
-  useEffect(()=>{
-    forecastweatherextras.map((obj)=>{
-      setSunset(obj.astro.sunset)
-      setSunrise(obj.astro.sunrise)
-      setChanceofRain(obj.day.daily_chance_of_rain)
-    })
-  }, [forecastweatherextras, city])
-  
-  
-  
-  
-  useEffect(()=>{
-    currentweatherapicall()
-    
-  }, [city])
-  
-  
-
-  useEffect(()=>{
-    if("geolocation" in navigator){
-      navigator.geolocation.getCurrentPosition((position)=>{
-        setGetCurrentLattitude(position.coords.latitude)
-        setGetCurrentLongitude(position.coords.longitude)
-      })
-  }
-  else{
-    console.error('Check Location permission')
-  }
-
-  },[])
-
-  const weatherIcons = {
-    sunny: `https://cdn-icons-png.flaticon.com/512/3222/3222691.png`,
-    clear: `https://cdn-icons-png.flaticon.com/512/3222/3222691.png`,
-    cloudy: `https://cdn-icons-png.flaticon.com/512/1163/1163736.png`,
-    mist:`https://cdn-icons-png.flaticon.com/512/175/175872.png`,
-    fog:`https://cdn-icons-png.flaticon.com/512/175/175872.png`,
-    Thunderstorm: ` https://cdn-icons-png.flaticon.com/512/3104/3104612.png`,
-    windy: ` https://cdn-icons-png.flaticon.com/512/3026/3026375.png`,
-    sleet: `https://cdn-icons-png.flaticon.com/512/7084/7084507.png`
-  }
-  const [icon, setIcon] = useState(`https://cdn-icons-png.flaticon.com/512/3222/3222691.png`)
-
-   
-
-  useEffect(()=>{
-    const countryAlphaCode = async () =>{
-      axios.get('https://pkgstore.datahub.io/core/country-list/data_json/data/8c458f2d15d9f2119654b29ede6e45b8/data_json.json')
-      .then(res=>{setAllCountrycode(res.data)})
-    }
-    allcountrycode.filter((country)=>{
-      if(country.Name == currentweatherdata.country){
-        setCountryCodes(country.Code)
+      if (error.response && error.response.status === 400) {
+        console.error("Bad Request:", error.response.data);
+      } else {
+        console.error("Error:", error.message);
       }
-      else{
-        console.log(false)
+    }
+
+    return () => {
+      setSearchRes([]);
+    };
+  }, [searchPlace]);
+
+  const [location, setLocation] = useState({
+    latitude: null,
+    longitude: null,
+  });
+
+  useEffect(() => {
+    const getLocation = () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            setLocation({ latitude, longitude });
+          },
+          (error) => {
+            console.error("Error getting location:", error.message);
+          }
+        );
+      } else {
+        console.error("Geolocation is not supported by your browser");
       }
+    };
 
-      })
+    getLocation();
 
-    countryAlphaCode()
-  }, [city])
- 
+    return () => {};
+  }, []);
+
+  const m = moment().format();
+  const formatted = m.split("T")[0];
+  const Isotime = moment().format("HH" + ":00");
+  const time = formatted + "T" + Isotime;
+  var timeId = 0;
+
+  const handleSearch = (id) => {
+    searchres.results.map((city) => {
+      if (city.id === id) {
+        setLocation({
+          latitude: city.latitude,
+          longitude: city.longitude,
+        });
+        setSearchPlace("");
+      }
+    });
+  };
+
+  const [airPollution, setAirPollution] = useState([]);
+  const [weatherData, setWeatherData] = useState([]);
+
+  useEffect(() => {
+    const airApi = `https://api.waqi.info/feed/geo:${location?.latitude};${location?.longitude}/?token=71ff0bd69c0a245bbe40cab489654baac9d4b498`;
+    const api = `https://api.open-meteo.com/v1/forecast?latitude=${location?.latitude}&longitude=${location?.longitude}&current=is_day,temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m&hourly=precipitation_probability,visibility,wind_direction_10m,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max&timezone=auto&forecast_days=8`;
+    try {
+      axios.get(api).then((res) => setWeatherData(res.data));
+      if (location.latitude !== null && location.longitude !== null) {
+        axios.get(airApi).then((res) => setAirPollution(res.data));
+      }
+    } catch (error) {
+      console.log("weather Fetch Error");
+    }
+  }, [location]);
+  const [reverseGeo, setReverseGeo] = useState([]);
+  const timeSearch = () => {
+    weatherData?.hourly?.time.map((item, id) => {
+      if (item === time) {
+        return (timeId = id);
+      }
+    });
+  };
+  timeSearch();
+
+  let currentStats = {
+    humidity: weatherData?.current?.relative_humidity_2m,
+    windDirection: weatherData?.current?.wind_direction_10m,
+    windSpeed: weatherData?.current?.wind_speed_10m,
+    visibility: weatherData?.hourly?.visibility[timeId] / 1000,
+    feelsLike: weatherData?.current?.apparent_temperature,
+    sunrise: weatherData?.daily?.sunrise[0],
+    sunset: weatherData?.daily?.sunset[0],
+    airPollution: airPollution?.data?.aqi,
+    weatherCode: weatherData?.current?.weather_code,
+    uvIndex: weatherData?.daily?.uv_index_max[0],
+    isDay: weatherData?.current?.is_day,
+    address: reverseGeo[0]?.properties?.address_line1,
+    countryCode: reverseGeo[0]?.properties?.country_code,
+    state: reverseGeo[0]?.properties.state,
+    rainProbability: weatherData?.hourly?.precipitation_probability[timeId],
+  };
+
+  const daily_temp_Max = weatherData?.daily?.temperature_2m_max.slice(1);
+  const daily_temp_Min = weatherData?.daily?.temperature_2m_min.slice(1);
+  const daily_weather_code = weatherData?.daily?.weather_code.slice(1);
+
+  const dailyTime = weatherData?.daily?.time.slice(1);
+
+  const [currentIcon, setCurrentIcon] = useState("Loading");
+  const [condition, setCondition] = useState("");
+  const [conditionIcon, setConditionIcon] = useState("");
+  useEffect(() => {
+    if (currentStats.isDay == 1) {
+      if (currentStats.weatherCode == 0) {
+        setCurrentIcon("/day_clear_sky.png");
+        setCondition("Clear");
+      } else if (
+        currentStats.weatherCode == 1 ||
+        currentStats.weatherCode == 2 ||
+        currentStats.weatherCode == 3
+      ) {
+        setCurrentIcon("/partly-cloudy.png");
+        setCondition("Partly Cloudy");
+      } else if (
+        currentStats.weatherCode == 48 ||
+        currentStats.weatherCode == 45
+      ) {
+        setCurrentIcon("/day-fog.png");
+        setCondition("Foggy");
+      } else if (
+        currentStats.weatherCode == 51 ||
+        currentStats.weatherCode == 53 ||
+        currentStats.weatherCode == 55 ||
+        currentStats.weatherCode == 56 ||
+        currentStats.weatherCode == 57
+      ) {
+        setCurrentIcon("/drizzle.png");
+        setCondition("Drizzle");
+      } else if (
+        currentStats.weatherCode == 61 ||
+        currentStats.weatherCode == 63
+      ) {
+        setCurrentIcon("/day-normal-rain.png");
+        setCondition("Rainy");
+      } else if (currentStats.weatherCode == 65) {
+        setCurrentIcon("/day-rain-shower.png");
+      } else if (
+        currentStats.weatherCode == 66 ||
+        currentStats.weatherCode == 67 ||
+        currentStats.weatherCode == 71 ||
+        currentStats.weatherCode == 73 ||
+        currentStats.weatherCode == 75 ||
+        currentStats.weatherCode == 77
+      ) {
+        setCurrentIcon("/snow-fall.png");
+        setCondition("Snow-fall");
+      } else if (
+        currentStats.weatherCode == 80 ||
+        currentStats.weatherCode == 81 ||
+        currentStats.weatherCode == 82
+      ) {
+        setCurrentIcon("/heavyRain.png");
+        setCondition("Rain shower");
+      } else if (
+        currentStats.weatherCode == 86 ||
+        currentStats.weatherCode == 85
+      ) {
+        setCurrentIcon("snow-shower.png");
+        setCondition("Snow shower");
+      } else if (currentStats.weatherCode == 95) {
+        setCurrentIcon("thunderstorm-day.png");
+        setCondition("ThunderStorm");
+      }
+    } else if (currentStats.isDay == 0) {
+      if (currentStats.weatherCode == 0) {
+        setCurrentIcon("/nightClear.png");
+        setCondition("Clear");
+      } else if (
+        currentStats.weatherCode == 1 ||
+        currentStats.weatherCode == 2 ||
+        currentStats.weatherCode == 3
+      ) {
+        setCurrentIcon("/nightCloudy.png");
+        setCondition("Partly Cloudy");
+      } else if (
+        currentStats.weatherCode == 48 ||
+        currentStats.weatherCode == 45
+      ) {
+        setCurrentIcon("/night-fog.png");
+        setCondition("Foggy");
+      } else if (
+        currentStats.weatherCode == 51 ||
+        currentStats.weatherCode == 53 ||
+        currentStats.weatherCode == 55 ||
+        currentStats.weatherCode == 56 ||
+        currentStats.weatherCode == 57
+      ) {
+        setCurrentIcon("/drizzle.png");
+        setCondition("Drizzle");
+      } else if (
+        currentStats.weatherCode == 61 ||
+        currentStats.weatherCode == 63
+      ) {
+        setCurrentIcon("/nightRain.png");
+        setCondition("Rainy");
+      } else if (currentStats.weatherCode == 65) {
+        setCurrentIcon("/night-rain-shower.png");
+      } else if (
+        currentStats.weatherCode == 66 ||
+        currentStats.weatherCode == 67 ||
+        currentStats.weatherCode == 71 ||
+        currentStats.weatherCode == 73 ||
+        currentStats.weatherCode == 75 ||
+        currentStats.weatherCode == 77
+      ) {
+        setCurrentIcon("/snow-fall.png");
+        setCondition("Snow-fall");
+      } else if (
+        currentStats.weatherCode == 80 ||
+        currentStats.weatherCode == 81 ||
+        currentStats.weatherCode == 82
+      ) {
+        setCurrentIcon("/heavyRain.png");
+        setCondition("Rain shower");
+      } else if (
+        currentStats.weatherCode == 86 ||
+        currentStats.weatherCode == 85
+      ) {
+        setCurrentIcon("snow-shower.png");
+        setCondition("Snow shower");
+      } else if (currentStats.weatherCode == 95) {
+        setCurrentIcon("thunderStormNight.png");
+        setCondition("ThunderStorm");
+      }
+    }
+  }, [currentStats.isDay, currentStats.weatherCode]);
+
+  useEffect(() => {
+    const api = `https://api.geoapify.com/v1/geocode/reverse?lat=${location.latitude}&lon=${location.longitude}&apiKey=6847e0b25d6e4ebd89d05dd0aed71f50`;
+    try {
+      axios.get(api).then((response) => {
+        setReverseGeo(response.data.features);
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  }, [location]);
+
   return (
+    <div
+      className={`w-full  flex justify-center items-center  ${
+        currentStats.isDay == 1 ? "bg-[#e9e9e9]" : "bg-[#101010]"
+      } iphone:flex-col ipadTablet:flex-row ipadTablet:items-center  ipadTablet:h-[100vh] gap-5`}
+    >
+      <div className="w-[90%]  flex iphone:flex-col ipadTablet:flex-row ipadTablet:items-center ipadTablet:h-[95%] ">
+        <div
+          className={`px-3 ipadTablet:w-[40%] rounded-l-3xl h-full ${
+            currentStats.isDay == 1 ? "bg-slate-50" : "bg-[black]"
+          }`}
+        >
+          <div className="h-full flex iphone:flex-col ipadTablet:flex-col ipadTablet:justify-around iphone:justify-between   px-3 items-start">
+            <div className="w-full relative z-[99]">
+              <input
+                onChange={(e) => {
+                  setSearchPlace(e.target.value);
+                }}
+                value={searchPlace}
+                className={`iphone w-full h-[50px] focus:outline-none focus:shadow-lg transition-all duration-300  ${
+                  currentStats.isDay == 1
+                    ? "bg-[#cecece] text-slate-800 placeholder:text-slate-600"
+                    : "bg-[#242424] text-slate-200 placeholder:text-slate-100"
+                } iphone:mt-5 ipadTablet:mt-0 rounded-full text-[1.1rem] font-semibold px-4`}
+                placeholder="Search Location"
+              />
 
-      <div className='flex justify-center items-center w-full bg-[#Dedede] h-[100vh]'>
-        <div className='flex max-w-1240px h-[95vh]'>
-
-            <div className=' flex justify-center w-[300px] bg-slate-50 rounded-l-3xl'>
-             <div className='flex flex-col '>
-                  <form className='mt-5' onSubmit={(e)=>{
-                    e.preventDefault()
-                    setCity('')
-                    }}>
-                    <input className='bg-slate-200 relative rounded-3xl w-[260px] h-[35px] px-3 focus:outline-none focus:shadow-[0_0px_15px_0px_#FFD710] transition-shadow z-[99]' placeholder='Search City...' onChange={e=>setCity(e.target.value)} value={city}/>
-                  </form> 
-                  <div className=' w-[200px] mt-8'><img src={icon}/></div>
-                  <div className='' ><p className='text-[6.8em] font-RedHat'>{currentweatherdata.currentTemp}&deg;c</p> <div className='mt-[-13px]' ><p className='text-[1.2em] text-slate-600'>Monday, 16:00</p></div></div>
-                  <div className='font-RegFont mt-5  py-3' >
-                      <div className='mt-1 text-[.9em] flex'> <div className='w-[20px]' ><img src={'https://cdn-icons-png.flaticon.com/512/399/399421.png'} /></div> <p className='ml-2'> {currentweatherdata.condition}</p></div>
-                      <div className='mt-1 text-[.9em] flex' > <div className='w-[20px]' ><img src={'https://cdn-icons-png.flaticon.com/512/1779/1779907.png'} /></div> <p className='ml-2' >Chances of Rain: {chanceofRain}%</p></div>
+              {searchres.length !== 0 && (
+                <div
+                  className={`absolute w-full top-[40%] z-[-1] h-auto pb-5 ${
+                    currentStats.isDay == 1 ? "bg-[#cecece]" : "bg-[#242424] "
+                  } transition-all duration-500 rounded-xl`}
+                >
+                  <div className="mt-10 px-3 transition-all duration-500">
+                    {searchres?.results?.map((city) => {
+                      return (
+                        <p
+                          onClick={() => handleSearch(city.id)}
+                          key={city?.id}
+                          className={`text-[1.4em] transition-all duration-500 font-RegFont cursor-pointer ]
+                          ${
+                            currentStats.isDay == 1
+                              ? "bg-[#cecece]  hover:bg-[#cecece] text-slate-900"
+                              : "bg-[#242424]  hover:bg-[#242424] text-slate-200"
+                          }
+                          `}
+                        >
+                          {city?.admin1} <span>, {city?.country}</span>
+                        </p>
+                      );
+                    })}
                   </div>
-                  <div className=' w-[100%] h-[80px] rounded-3xl border flex justify-center items-center border-slate-400' >
-                        <p className='font-RegFont text-[1.5em] font-semibold'>{currentweatherdata.city}, <span className='text-[.6em]'>{countryCodes}</span> </p>
-                  </div>
-             </div>
-
+                </div>
+              )}
             </div>
 
+            <div className=" ">
+              <div className="w-[65%] ">
+                <img src={`${currentIcon}`} className="w-full h-full" />
+              </div>
 
-            <div className='w-[900px] bg-[#Ececec]  rounded-r-3xl'>
-                  <div className=''>
-                      <div className='px-12 mt-6 '>
-                          <p className='border-b border-slate-400 inline-block'>Week</p>
-                      </div>
+              <div className="flex  justify-start">
+                <p
+                  className={`font-RedHat text-[90px]  ${
+                    currentStats.isDay == 1
+                      ? "text-slate-800"
+                      : "text-slate-200"
+                  }`}
+                >
+                  {weatherData?.current?.temperature_2m}
+                </p>
 
-                      <div className='flex justify-center items-center mt-[20px] '>
-                      <div className='grid grid-cols-7 w-[800px] place-items-center ' >
-                          
-                          <div className='w-[105px] h-[120px] bg-white rounded-xl flex flex-col items-center gap-1'>
-                              <p className='mt-1'>Sun</p>
-                              <div className='w-[55px]'><img src='https://cdn-icons-png.flaticon.com/512/146/146182.png' /></div>
-                              <div className='font-RedHat text-[1.1em]'>15&deg;</div>
-                            </div>
+                <p
+                  className={`font-RedHat text-[60px]  ${
+                    currentStats.isDay == 1
+                      ? "text-slate-800"
+                      : "text-slate-200"
+                  }`}
+                >
+                  &deg;
+                </p>
 
-                            <div className='w-[105px] h-[120px] bg-white rounded-xl flex flex-col items-center gap-1'>
-                              <p className='mt-1'>Mon</p>
-                              <div className='w-[55px]'><img src='https://cdn-icons-png.flaticon.com/512/146/146182.png' /></div>
-                              <div className='font-RedHat text-[1.1em]'>15&deg;</div>
-                            </div>
-                            
-
-
-                            <div className='w-[105px] h-[120px] bg-white rounded-xl flex flex-col items-center gap-1'>
-                              <p className='mt-1 font-RegFont'>Tue</p>
-                              <div className='w-[55px]'><img src='https://cdn-icons-png.flaticon.com/512/146/146182.png' /></div>
-                              <div className='font-RedHat text-[1.1em]'>15&deg;</div>
-                            </div>
-
-                            <div className='w-[105px] h-[120px] bg-white rounded-xl flex flex-col items-center gap-1'>
-                              <p className='mt-1 font-RegFont'>Wed</p>
-                              <div className='w-[55px]'><img src='https://cdn-icons-png.flaticon.com/512/146/146182.png' /></div>
-                              <div className='font-RedHat text-[1.1em]'>15&deg;</div>
-                            </div>
-
-                            <div className='w-[105px] h-[120px] bg-white rounded-xl flex flex-col items-center gap-1'>
-                              <p className='mt-1 font-RegFont'>Thu</p>
-                              <div className='w-[55px]'><img src='https://cdn-icons-png.flaticon.com/512/146/146182.png' /></div>
-                              <div className='font-RedHat text-[1.1em]'>15&deg;</div>
-                            </div>
-
-                            <div className='w-[105px] h-[120px] bg-white rounded-xl flex flex-col items-center gap-1'>
-                              <p className='mt-1 font-RegFont'>Fri</p>
-                              <div className='w-[55px]'><img src='https://cdn-icons-png.flaticon.com/512/146/146182.png' /></div>
-                              <div className='font-RedHat text-[1.1em]'>15&deg;</div>
-                            </div>
-                            <div className='w-[105px] h-[120px] bg-white rounded-xl flex flex-col items-center gap-1'>
-                              <p className='mt-1 font-RegFont'>Sat</p>
-                              <div className='w-[55px]'><img src='https://cdn-icons-png.flaticon.com/512/146/146182.png' /></div>
-                              <div className='font-RedHat text-[1.1em]'>15&deg;</div>
-                            </div>
-
-                           
-                      </div>
-
-                      </div>
-
-                    </div>
-
-
-                 
-                  <div className='px-12 mt-9 '>
-                          <p className=''>Today's Highlight</p>
-                      </div>
-
-                      <div className='flex justify-center items-center mt-[20px] '>
-                      <div className='grid grid-cols-3 grid-rows-2 w-[800px] place-items-center gap-y-4 ' >
-                           
-                          <div className='w-[260px] h-[190px] bg-white rounded-xl '>
-                               <p className='text-slate-600 px-4 py-2 font-RegFont'>Air Quality</p>
-                               <div className='flex gap-8'>
-                                    <div>
-                                        <p className='text-[4.5em] font-RedHat px-4 w-[135px]'>89 </p>
-                                        <p className='font-RegFont px-4'>Good</p>
-                                    </div>
-
-                                    <div className=' w-[40px] rounded-full flex justify-center border'>
-                                        <div className='bg-[#00FFBF] w-[35px] h-[35px] rounded-full mt-[2px] translate-y-[80px]'></div>
-                                    </div>
-                              </div>
-                            </div>
-
-                            <div className='w-[260px] h-[190px] bg-white rounded-xl '>
-                            <p className='text-slate-600 px-4 py-2'>Wind Speed</p>
-
-                            <p className='text-[4.5em] font-RedHat px-4'>{currentweatherdata.windSpeed} <span className='text-[.5em]'>km/h</span> </p>
-                               <p className='font-RegFont px-4 flex items-center'><div className='w-[30px] h-[30px] flex justify-center items-center border rounded-full mr-3'><img className='w-[80%]' src='https://www.iconpacks.net/icons/2/free-location-icon-2955-thumb.png' /></div>{currentweatherdata.windDirection}</p>
-                            </div>
-
-
-                            <div className='w-[260px] h-[190px] bg-white rounded-xl '>
-                                <p className='text-slate-600 px-4 py-2'>Sunrise Sunset</p>
-                                <div className='flex'>
-                                <div className='flex flex-col gap-6 px-4'>
-                                  <div className='w-[55px] relative'>
-                                    <img src='https://cdn-icons-png.flaticon.com/512/146/146182.png' />
-                                    <ArrowUp className='absolute top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%]' />
-                                  </div>
-                               
-                                  <div className='w-[55px] relative'>
-                                    <img src='https://cdn-icons-png.flaticon.com/512/146/146182.png' />
-                                    <ArrowDown className='absolute top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%]' />
-                                  </div>
-
-                                </div>
-
-                                <div className='flex flex-col gap-9'>
-                                    <p className='font-RedHat text-[1.7em] mt-2'>{sunrise}</p>
-                                    <p className='font-RedHat text-[1.7em]'>{sunset}</p>
-                                </div>
-
-                                </div>
-
-                            </div>
-
-                            <div className='w-[260px] h-[190px] bg-white rounded-xl '>
-                            <p className='text-slate-600 px-4 py-2'>Visibilty</p>
-                            <p className='text-[4.5em] font-RedHat px-4'>{currentweatherdata.visibility}<span className='text-[.5em]'>km</span></p>
-                               <p className='font-RegFont px-4'>Low</p>
-                            </div>
-
-                            <div className='w-[260px] h-[190px] bg-white rounded-xl '>
-                              <p className='text-slate-600 px-4 py-2'>Humidity</p>
-                              <div className='flex gap-8'>
-                                    <div>
-                                        <p className='text-[4.5em] font-RedHat px-4'>{currentweatherdata.humidity}<span className='text-[.5em]'>%</span></p>
-                                        <p className='font-RegFont px-4'>Normal</p>
-                                    </div>
-
-                                    <div className=' w-[40px] rounded-full flex justify-center border'>
-                                        <div className='bg-blue-500 w-[35px] h-[35px] rounded-full mt-[2px]'></div>
-                                    </div>
-                              </div>
-
-                            </div>
-
-                            <div className='w-[260px] h-[190px] bg-white rounded-xl '>
-                                <p className='text-slate-600 px-4 py-2'>Feels like</p>
-                                <p className='font-RedHat text-[4.5em] px-4'>{currentweatherdata.feelsLike}&deg;</p>
-                                <div className='w-[30px] ml-2 flex font-RegFont items-center'><img src={'https://upload.wikimedia.org/wikipedia/en/d/d5/Thermometer_icon.png'} />{feelslikeCondition}</div>
-                            </div>
-                            
-
-                           
-                      
-                      </div>
-                  </div>
-             </div>
-
-
+                <p
+                  className={`font-RedHat text-[70px]  ${
+                    currentStats.isDay == 1
+                      ? "text-slate-800"
+                      : "text-slate-200"
+                  }`}
+                >
+                  c
+                </p>
+              </div>
+              <p
+                className={`font-satoshi text-[20px]   ${
+                  currentStats.isDay == 1 ? "text-slate-800" : "text-slate-200"
+                }`}
+              >
+                {moment().format("dddd")}{" "}
+                <span className="text-slate-500">
+                  {moment().format("hh:mm a")}
+                </span>
+              </p>
+            </div>
+            <div className=" border-slate-700 opacity-[.2] h-[1px] border w-full"></div>
+            <div className="flex flex-col gap-2 w-full ">
+              <p
+                className={`font-satoshi text-[20px]  ${
+                  currentStats.isDay == 1 ? "text-slate-800" : "text-slate-200"
+                }`}
+              >
+                {condition}
+              </p>
+              <div className="flex items-center gap-4">
+              <img className="w-[35px]" src="rainIcon.png" />
+                <p
+                  className={`font-satoshi text-[20px]  ${
+                    currentStats.isDay == 1
+                      ? "text-slate-800"
+                      : "text-slate-200"
+                  }`}
+                >
+                  Rain {currentStats?.rainProbability}%
+                </p>
+                
+              </div>
+            </div>
+            <div
+              className={`flex justify-center items-center w-full h-[90px]  ${
+                currentStats.isDay == 1 ? "bg-[#cecece]" : " bg-[#242424]"
+              } rounded-xl`}
+            >
+              <p
+                className={`text-[1.3em] font-generalSans font-medium ${
+                  currentStats.isDay == 1 ? "text-slate-900" : "text-slate-200 "
+                }`}
+              >
+                {currentStats.address}, <span>{currentStats.state},</span>{" "}
+                <span className="capitalize">{currentStats.countryCode}</span>
+              </p>
+            </div>
           </div>
+        </div>
 
+        <div
+          className={`  w-full ${
+            currentStats.isDay == 1 ? "bg-[#cecece]" : "bg-[#2f2f2f]"
+          } h-full  rounded-r-3xl `}
+        >
+          <div className="w-full h-full flex flex-col-reverse justify-around ">
+            <div className="py-2">
+              <p
+                className={`px-12 text-[1.4em] mt-1 font-satoshi font-medium  ${
+                  currentStats.isDay == 1 ? "text-slate-800" : "text-slate-200"
+                }`}
+              >
+                Today`s Highlight
+              </p>
+              <CurrentWeatherInfo
+                current={currentStats}
+                location={location}
+                isDay={currentStats.isDay}
+              />
+            </div>
+
+            <div className="py-2 ">
+              <p
+                className={`px-12 text-[1.3em] font-satoshi font-medium ${
+                  currentStats.isDay == 1 ? "text-slate-800" : "text-slate-200"
+                } mt-1`}
+              >
+                Week
+              </p>
+              <ForecastDayCard
+                min={daily_temp_Min}
+                max={daily_temp_Max}
+                dailyTime={dailyTime}
+                weatherCode={daily_weather_code}
+                isDay={currentStats.isDay}
+              />
+            </div>
+          </div>
+        </div>
       </div>
-  )
-}
+    </div>
+  );
+};
 
-export default App
+export default App;
