@@ -271,7 +271,7 @@ const App = () => {
         currentStats.isDay == 1 ? "bg-[#e9e9e9]" : "bg-[#101010]"
       } iphone:flex-col ipadTablet:flex-row ipadTablet:items-center  ipadTablet:h-[100vh] gap-5`}
     >
-      <div className="w-[90%]  flex iphone:flex-col ipadTablet:flex-row ipadTablet:items-center ipadTablet:h-[95%] ">
+      <div className="w-[90%] flex iphone:flex-col ipadTablet:flex-row ipadTablet:items-center ipadTablet:h-[95%] ">
         <div
           className={`px-3 ipadTablet:w-[40%] rounded-l-3xl h-full ${
             currentStats.isDay == 1 ? "bg-slate-50" : "bg-[black]"
@@ -328,7 +328,7 @@ const App = () => {
 
               <div className="flex  justify-start">
                 <p
-                  className={`font-RedHat text-[90px]  ${
+                  className={`font-RedHat text-[70px]  ${
                     currentStats.isDay == 1
                       ? "text-slate-800"
                       : "text-slate-200"
@@ -338,7 +338,7 @@ const App = () => {
                 </p>
 
                 <p
-                  className={`font-RedHat text-[60px]  ${
+                  className={`font-RedHat text-[45px]  ${
                     currentStats.isDay == 1
                       ? "text-slate-800"
                       : "text-slate-200"
@@ -348,7 +348,7 @@ const App = () => {
                 </p>
 
                 <p
-                  className={`font-RedHat text-[70px]  ${
+                  className={`font-RedHat text-[55px]  ${
                     currentStats.isDay == 1
                       ? "text-slate-800"
                       : "text-slate-200"
@@ -378,7 +378,7 @@ const App = () => {
                 {condition}
               </p>
               <div className="flex items-center gap-4">
-              <img className="w-[35px]" src="rainIcon.png" />
+                <img className="w-[35px]" src="rainIcon.png" />
                 <p
                   className={`font-satoshi text-[20px]  ${
                     currentStats.isDay == 1
@@ -388,7 +388,6 @@ const App = () => {
                 >
                   Rain {currentStats?.rainProbability}%
                 </p>
-                
               </div>
             </div>
             <div
@@ -413,7 +412,7 @@ const App = () => {
             currentStats.isDay == 1 ? "bg-[#cecece]" : "bg-[#2f2f2f]"
           } h-full  rounded-r-3xl `}
         >
-          <div className="w-full h-full flex flex-col-reverse justify-around ">
+          <div className="w-full h-full flex flex-col-reverse justify-between">
             <div className="py-2">
               <p
                 className={`px-12 text-[1.4em] mt-1 font-satoshi font-medium  ${
@@ -422,11 +421,15 @@ const App = () => {
               >
                 Today`s Highlight
               </p>
-              <CurrentWeatherInfo
-                current={currentStats}
-                location={location}
-                isDay={currentStats.isDay}
-              />
+
+              <div className="">
+                <CurrentWeatherInfo
+                  current={currentStats}
+                  location={location}
+                  isDay={currentStats.isDay}
+                />
+              </div>
+
             </div>
 
             <div className="py-2 ">

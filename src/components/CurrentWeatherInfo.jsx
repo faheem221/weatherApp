@@ -30,13 +30,13 @@ const CurrentWeatherInfo = (props) => {
       props.current.airPollution < 150 &&
       props.current.airPollution > 101
     ) {
-      setAirQuality("Unhealty");
+      setAirQuality("Unhealthy");
       setAirQualityScale(35);
     } else if (
       props.current.airPollution < 200 &&
       props.current.airPollution > 151
     ) {
-      setAirQuality("Unhealty");
+      setAirQuality("Unhealthy");
       setAirQualityScale(20);
     } else if (
       props.current.airPollution < 300 &&

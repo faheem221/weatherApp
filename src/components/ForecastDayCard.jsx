@@ -109,7 +109,7 @@ const ForecastDayCard = (props) => {
                       ) {
                         return (
                           <div className="w-full h-full flex flex-col justify-center items-center">
-                            <img className="w-[78%]" src="heavyRainpng" />
+                            <img className="w-[78%]" src="heavyRain.png" />
                           </div>
                         );
                       } else if (
